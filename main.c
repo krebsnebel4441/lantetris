@@ -34,6 +34,8 @@ static shape_t shapes[7] = {
 static int board[NUMROWS][NUMCOLS];
 
 void drawboard();
+bool allowed(int, int, short);
+void eraseshape(int, int, short);
 
 int main() {
 	int curx = 3, cury = 0;
@@ -61,6 +63,16 @@ int main() {
 	}
 	drawboard();
 	refresh();
+	while (allowed(curx, cury+1, S)) {
+		eraseshape(curx, cury, S);
+		cury++;
+		for (int i = 0; i < 4; i++) {
+			board[cury + shapes[S].blocks[i].y][curx + shapes[S].blocks[i].x] = shapes[S].color;
+		}
+		getch();
+		drawboard();
+		refresh();
+	};
 	getch();
 	endwin();
 	return 0;
@@ -73,5 +85,22 @@ void drawboard() {
 			addstr(". ");
 		}
 		move(i+1, 0);
+	}
+	move(0, 0);
+}
+
+bool allowed(int x, int y, short shape) {
+	for (int i = 0; i < 4; i++) {
+		if (x + shapes[shape].blocks[i].x >= NUMCOLS
+		 || y + shapes[shape].blocks[i].y >= NUMROWS) {
+		 return false;
+		}
+	}
+	return true;
+}
+
+void eraseshape(int x, int y, short shape) {
+	for (int i = 0; i < 4; i++) {
+		board[y + shapes[S].blocks[i].y][x + shapes[S].blocks[i].x] = BLACK;
 	}
 }
