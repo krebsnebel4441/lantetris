@@ -1,4 +1,7 @@
 #include <ncurses.h>
+#include <uv.h>
+
+#define TIME 1000 / (level + 2)
 
 #define NUMROWS 20
 #define NUMCOLS 10
@@ -11,6 +14,11 @@
 #define MAGENTA COLOR_MAGENTA
 #define CYAN COLOR_CYAN
 #define WHITE COLOR_WHITE
+
+struct status {
+	int curx, cury;
+	short shape;
+};
 
 struct block {
 	int x, y;
@@ -32,13 +40,19 @@ static shape_t shapes[7] = {
 };
 
 static int board[NUMROWS][NUMCOLS];
+static short level = 1;
 
 void drawboard();
 bool allowed(int, int, short);
 void eraseshape(int, int, short);
+void move_down(uv_timer_t *);
+
+uv_loop_t * loop;
 
 int main() {
-	int curx = 3, cury = 0;
+	struct status status = {3, 0, 0};
+
+	uv_timer_t timer;
 
 	initscr();
 	start_color();
@@ -57,22 +71,20 @@ int main() {
 			board[i][j] = BLACK;
 		}
 	}
-	#define S 6 
 	for (int i = 0; i < 4; i++) {
-		board[cury + shapes[S].blocks[i].y][curx + shapes[S].blocks[i].x] = shapes[S].color;
+		board[status.cury + shapes[status.shape].blocks[i].y][status.curx + shapes[status.shape].blocks[i].x] = shapes[status.shape].color; 
 	}
 	drawboard();
 	refresh();
-	while (allowed(curx, cury+1, S)) {
-		eraseshape(curx, cury, S);
-		cury++;
-		for (int i = 0; i < 4; i++) {
-			board[cury + shapes[S].blocks[i].y][curx + shapes[S].blocks[i].x] = shapes[S].color;
-		}
-		getch();
-		drawboard();
-		refresh();
-	};
+	
+	loop = uv_default_loop();
+	uv_loop_init(loop);
+	uv_timer_init(loop, &timer);
+	timer.data = (void *) &status;
+	uv_timer_start(&timer, move_down, TIME, TIME);
+	uv_run(loop, UV_RUN_DEFAULT);
+	
+	uv_loop_close(loop);
 	getch();
 	endwin();
 	return 0;
@@ -101,6 +113,22 @@ bool allowed(int x, int y, short shape) {
 
 void eraseshape(int x, int y, short shape) {
 	for (int i = 0; i < 4; i++) {
-		board[y + shapes[S].blocks[i].y][x + shapes[S].blocks[i].x] = BLACK;
+		board[y + shapes[shape].blocks[i].y][x + shapes[shape].blocks[i].x] = BLACK;
+	}
+}
+
+void move_down(uv_timer_t * handle) {
+	struct status * data = (struct status *) handle->data;
+	if (allowed(data->curx, data->cury+1, data->shape)) {
+		eraseshape(data->curx, data->cury, data->shape);
+		data->cury++;
+		for (int i = 0; i < 4; i++) {
+			board[data->cury + shapes[data->shape].blocks[i].y][data->curx + shapes[data->shape].blocks[i].x] = shapes[data->shape].color;
+		}
+		drawboard();
+		refresh();
+	} else {
+		uv_timer_stop(handle);
+		uv_stop(loop);
 	}
 }
