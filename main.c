@@ -20,7 +20,8 @@ struct block {
 };
 
 // The blocks of the shape are reside in a coordinate system like this
-//   0 1 2
+//   -1 0 1 2
+//-1 
 // 0
 // 1
 // The x and the y value of a block specifies it's coordinate in that system.
@@ -38,12 +39,13 @@ struct status {
 };
 
 static shape_t shapes[7] = {
-	{{{0, 0}, {1, 0}, {2, 0}, {3, 0}}, RED, false, 1},
-	{{{0, 0}, {1, 0}, {2, 0}, {2, 1}}, WHITE, false, 2},
-	{{{1, 0}, {2, 0}, {0, 1}, {1, 1}}, GREEN, false, 3},
-	{{{0, 0}, {1, 0}, {1, 1}, {2, 1}}, CYAN, false, 4},
-	{{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, BLUE, false, 5},
-	{{{0, 0}, {1, 0}, {2, 0}, {1, 1}}, YELLOW, false, 6},
+	{{{-1, 1}, {-1, 0}, {0, 0}, {1, 0}}, MAGENTA, false, 0},
+	{{{-1, 0}, {0, 0}, {1, 0}, {2, 0}}, RED, false, 1},
+	{{{1, 1}, {1, 0}, {0, 0}, {-1, 0}}, WHITE, false, 2},
+	{{{1, -1}, {0, -1}, {0, 0}, {-1, 0}}, GREEN, false, 3},
+	{{{1, 0}, {0, 0}, {0, -1}, {-1, -1}}, CYAN, false, 4},
+	{{{-1, -1}, {0, -1}, {-1, 0}, {0, 0}}, BLUE, false, 5},
+	{{{-1, 0}, {0, 0}, {1, 0}, {0, 1}}, YELLOW, false, 6},
 };
 
 static int board[NUMROWS][NUMCOLS];
@@ -55,12 +57,11 @@ void eraseshape(int, int, shape_t *);
 void move_down(uv_timer_t *);
 static void real_rotate(shape_t *, bool);
 static void rotate(shape_t *);
-void input(uv_idle_t *);
 
 uv_loop_t * loop;
 
 int main() {
-	struct status status = {3, 0, shapes[0]};
+	struct status status = {4, 0, shapes[6]};
 
 	uv_timer_t timer;
 
@@ -84,7 +85,7 @@ int main() {
 		}
 	}
 	for (int i = 0; i < 4; i++) {
-		board[status.cury + status.shape.blocks[i].y][status.curx + status.shape.blocks[i].x] = status.shape.color; 
+		board[status.cury + status.shape.blocks[i].y + 1][status.curx + status.shape.blocks[i].x] = status.shape.color; 
 	}
 	drawboard();
 	refresh();
@@ -111,14 +112,14 @@ void drawboard() {
 			addstr(". ");
 		}
 		move(i+1, 0);
-	}
+	} 
 	move(0, 0);
 }
 
 bool allowed(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
-		if (x + shape->blocks[i].x >= NUMCOLS
-		 || y + shape->blocks[i].y >= NUMROWS
+		if (x + shape->blocks[i].x >= NUMCOLS-1
+		 || y + shape->blocks[i].y >= NUMROWS-1
 		 || x + shape->blocks[i].x < 0
 		 || y + shape->blocks[i].y < 0) {
 		 return false;
@@ -129,7 +130,7 @@ bool allowed(int x, int y, shape_t * shape) {
 
 void eraseshape(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
-		board[y + shape->blocks[i].y][x + shape->blocks[i].x] = BLACK;
+		board[y + shape->blocks[i].y + 1][x + shape->blocks[i].x] = BLACK;
 	}
 }
 
@@ -139,7 +140,7 @@ void move_down(uv_timer_t * handle) {
 		eraseshape(data->curx, data->cury, &(data->shape));
 		data->cury++;
 		for (int i = 0; i < 4; i++) {
-			board[data->cury + data->shape.blocks[i].y][data->curx + data->shape.blocks[i].x] = data->shape.color;
+			board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
 		}
 		drawboard();
 		refresh();
@@ -149,7 +150,7 @@ void move_down(uv_timer_t * handle) {
 	}
 }
 
-// This rotation code is basically copied from Abraham vd Merwe <abz@blio.net>
+// This rotation code (including the coordinate system) is copied/inspired from Abraham vd Merwe <abz@blio.net>
 // fantastic tetris implementation tint (github.com/DavidGriffith/tint) (check
 // it out). I mainly adopted it to my (in my opionion more intuitive coordinate system starting a 0 and not -1.
 // Anyway thankyou from me for that source of inspiration.
@@ -157,14 +158,14 @@ static void real_rotate(shape_t * shape, bool clockwise) {
 	if (clockwise) {
 		for (int i = 0; i < 4; i++) {
 			int tmp = shape->blocks[i].x;
-			shape->blocks[i].x = -(shape->blocks[i].y - 1);
-			shape->blocks[i].y = tmp-1;
+			shape->blocks[i].x = shape->blocks[i].y; 
+			shape->blocks[i].y = tmp;
 		}
 	} else {
 		for (int i = 0; i < 4; i++) {
 			int tmp = shape->blocks[i].x;
-			shape->blocks[i].x = shape->blocks[i].y - 1;
-			shape->blocks[i].y = -(tmp-1);
+			shape->blocks[i].x = shape->blocks[i].y;
+			shape->blocks[i].y = tmp;
 		}
 	}
 }
