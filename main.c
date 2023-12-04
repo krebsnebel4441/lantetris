@@ -165,7 +165,9 @@ void input(uv_idle_t * handle) {
 				for (int i = 0; i < 4; i++) {
 					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = BLACK;
 				}
+				shape_t tmp = data->shape;
 				rotate(&(data->shape));
+				if (!allowed(data->curx, data->cury, &(data->shape))) data->shape = tmp;
 				for (int i = 0; i < 4; i++) {
 					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
 				}
