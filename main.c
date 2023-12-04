@@ -172,6 +172,8 @@ void input(uv_idle_t * handle) {
 				drawboard();
 				refresh();
 				break;
+			case 'q':
+				uv_stop(loop);
 			default: break;
 		}
 	}
