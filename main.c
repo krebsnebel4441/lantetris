@@ -55,6 +55,7 @@ void drawboard();
 bool allowed(int, int, shape_t *);
 void eraseshape(int, int, shape_t *);
 void move_down(uv_timer_t *);
+void input(uv_idle_t *);
 static void real_rotate(shape_t *, bool);
 static void rotate(shape_t *);
 
@@ -64,7 +65,8 @@ int main() {
 	struct status status = {4, 0, shapes[6]};
 
 	uv_timer_t timer;
-
+	uv_idle_t idler;
+	
 	initscr();
 	start_color();
 	init_pair(RED, COLOR_BLACK, RED);
@@ -76,6 +78,7 @@ int main() {
 	init_pair(WHITE, COLOR_BLACK, WHITE);
 	init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
 	curs_set(0);
+	nodelay(stdscr, TRUE);
 	noecho();
 	move(0, 0);
 	
@@ -97,6 +100,9 @@ int main() {
 	uv_timer_init(loop, &timer);
 	uv_timer_start(&timer, move_down, TIME, TIME);
 	
+	uv_idle_init(loop, &idler);
+	uv_idle_start(&idler, input);
+
 	uv_run(loop, UV_RUN_DEFAULT);
 	
 	uv_loop_close(loop);
@@ -150,6 +156,27 @@ void move_down(uv_timer_t * handle) {
 	}
 }
 
+void input(uv_idle_t * handle) {
+	struct status * data = (struct status *)loop->data;
+	int c = getch();
+	if (c != ERR) {
+		switch (c) {
+			case 'k':
+				for (int i = 0; i < 4; i++) {
+					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = BLACK;
+				}
+				rotate(&(data->shape));
+				for (int i = 0; i < 4; i++) {
+					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
+				}
+				drawboard();
+				refresh();
+				break;
+			default: break;
+		}
+	}
+}
+
 // This rotation code (including the coordinate system) is copied/inspired from Abraham vd Merwe <abz@blio.net>
 // fantastic tetris implementation tint (github.com/DavidGriffith/tint) (check
 // it out). I mainly adopted it to my (in my opionion more intuitive coordinate system starting a 0 and not -1.
@@ -158,14 +185,14 @@ static void real_rotate(shape_t * shape, bool clockwise) {
 	if (clockwise) {
 		for (int i = 0; i < 4; i++) {
 			int tmp = shape->blocks[i].x;
-			shape->blocks[i].x = shape->blocks[i].y; 
+			shape->blocks[i].x = -shape->blocks[i].y; 
 			shape->blocks[i].y = tmp;
 		}
 	} else {
 		for (int i = 0; i < 4; i++) {
 			int tmp = shape->blocks[i].x;
 			shape->blocks[i].x = shape->blocks[i].y;
-			shape->blocks[i].y = tmp;
+			shape->blocks[i].y = -tmp;
 		}
 	}
 }
