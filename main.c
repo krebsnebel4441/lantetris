@@ -174,6 +174,28 @@ void input(uv_idle_t * handle) {
 				drawboard();
 				refresh();
 				break;
+			case 'j':
+				for (int i = 0; i < 4; i++) {
+					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = BLACK; 
+				}
+				if (allowed(data->curx - 1, data->cury, &(data->shape))) data->curx--;
+				for (int i = 0; i < 4; i++) {
+					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
+				}
+				drawboard();
+				refresh();
+				break;
+			case 'l':
+				for (int i = 0; i < 4; i++) {
+                                         board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = BLACK;
+                                }
+                                if (allowed(data->curx + 1, data->cury, &(data->shape))) data->curx++;
+                                for (int i = 0; i < 4; i++) {
+                                        board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
+                                }
+                                drawboard();
+                                refresh();
+                                break;
 			case 'q':
 				uv_stop(loop);
 			default: break;
