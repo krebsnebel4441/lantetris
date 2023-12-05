@@ -123,7 +123,7 @@ void drawboard() {
 
 bool allowed(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
-		if (x + shape->blocks[i].x >= NUMCOLS-1
+		if (x + shape->blocks[i].x >= NUMCOLS
 		 || y + shape->blocks[i].y >= NUMROWS-1
 		 || x + shape->blocks[i].x < 0
 		 || y + shape->blocks[i].y < 0) {
