@@ -54,6 +54,7 @@ static short level = 1;
 void drawboard();
 bool allowed(int, int, shape_t *);
 void eraseshape(int, int, shape_t *);
+void drawshape(int, int, shape_t *);
 void move_down(uv_timer_t *);
 void input(uv_idle_t *);
 static void real_rotate(shape_t *, bool);
@@ -87,9 +88,7 @@ int main() {
 			board[i][j] = BLACK;
 		}
 	}
-	for (int i = 0; i < 4; i++) {
-		board[status.cury + status.shape.blocks[i].y + 1][status.curx + status.shape.blocks[i].x] = status.shape.color; 
-	}
+	drawshape(status.curx, status.cury, &(status.shape));
 	drawboard();
 	refresh();
 	
@@ -145,9 +144,7 @@ void move_down(uv_timer_t * handle) {
 	if (allowed(data->curx, data->cury+1, &(data->shape))) {
 		eraseshape(data->curx, data->cury, &(data->shape));
 		data->cury++;
-		for (int i = 0; i < 4; i++) {
-			board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
-		}
+		drawshape(data->curx, data->cury, &(data->shape));
 		drawboard();
 		refresh();
 	} else {
@@ -162,37 +159,25 @@ void input(uv_idle_t * handle) {
 	if (c != ERR) {
 		switch (c) {
 			case 'k':
-				for (int i = 0; i < 4; i++) {
-					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = BLACK;
-				}
+				eraseshape(data->curx, data->cury, &(data->shape));
 				shape_t tmp = data->shape;
 				rotate(&(data->shape));
 				if (!allowed(data->curx, data->cury, &(data->shape))) data->shape = tmp;
-				for (int i = 0; i < 4; i++) {
-					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
-				}
+				drawshape(data->curx, data->cury, &(data->shape));
 				drawboard();
 				refresh();
 				break;
 			case 'j':
-				for (int i = 0; i < 4; i++) {
-					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = BLACK; 
-				}
+				eraseshape(data->curx, data->cury, &(data->shape));
 				if (allowed(data->curx - 1, data->cury, &(data->shape))) data->curx--;
-				for (int i = 0; i < 4; i++) {
-					board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
-				}
+				drawshape(data->curx, data->cury, &(data->shape));
 				drawboard();
 				refresh();
 				break;
 			case 'l':
-				for (int i = 0; i < 4; i++) {
-                                         board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = BLACK;
-                                }
+				eraseshape(data->curx, data->cury, &(data->shape));
                                 if (allowed(data->curx + 1, data->cury, &(data->shape))) data->curx++;
-                                for (int i = 0; i < 4; i++) {
-                                        board[data->cury + data->shape.blocks[i].y + 1][data->curx + data->shape.blocks[i].x] = data->shape.color;
-                                }
+				drawshape(data->curx, data->cury, &(data->shape));
                                 drawboard();
                                 refresh();
                                 break;
@@ -242,4 +227,10 @@ static void rotate(shape_t * shape) {
 			shape->flipped = !shape->flipped;
 			break;
 	}
+}
+
+void drawshape(int x, int y, shape_t * shape) {
+	for (int i = 0; i < 4; i++) {
+                board[y + shape->blocks[i].y + 1][x + shape->blocks[i].x] = shape->color;
+        }
 }
