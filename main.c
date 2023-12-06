@@ -65,7 +65,7 @@ static void rotate(shape_t *);
 uv_loop_t * loop;
 
 int main() {
-	struct status status = {4, 0, shapes[6]};
+	struct status status = {4, 1, shapes[6]};
 
 	uv_timer_t timer;
 	uv_idle_t idler;
@@ -125,8 +125,8 @@ void drawboard() {
 
 enum allowed_t allowed(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
-		bool inyrange = (y + shape->blocks[i].y < NUMROWS-1 && y + shape->blocks[i].y >= 0);
-		if (inyrange && board[y + shape->blocks[i].y + 1][x + shape->blocks[i].x] != BLACK && board[y + shape->blocks[i].y + 1][x + shape->blocks[i].x] != shape->color) {
+		bool inyrange = (y + shape->blocks[i].y < NUMROWS && y + shape->blocks[i].y >= 0);
+		if (inyrange && board[y + shape->blocks[i].y][x + shape->blocks[i].x] != BLACK && board[y + shape->blocks[i].y][x + shape->blocks[i].x] != shape->color) {
 			return BOTTOM;
 		} else if (x + shape->blocks[i].x >= NUMCOLS
 		 || x + shape->blocks[i].x < 0 || !inyrange) {
@@ -138,7 +138,7 @@ enum allowed_t allowed(int x, int y, shape_t * shape) {
 
 void eraseshape(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
-		board[y + shape->blocks[i].y + 1][x + shape->blocks[i].x] = BLACK;
+		board[y + shape->blocks[i].y][x + shape->blocks[i].x] = BLACK;
 	}
 }
 
@@ -234,6 +234,6 @@ static void rotate(shape_t * shape) {
 
 void drawshape(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
-                board[y + shape->blocks[i].y + 1][x + shape->blocks[i].x] = shape->color;
+                board[y + shape->blocks[i].y][x + shape->blocks[i].x] = shape->color;
         }
 }
