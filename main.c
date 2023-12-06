@@ -125,13 +125,12 @@ void drawboard() {
 
 enum allowed_t allowed(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
-		bool inyrange = (y + shape->blocks[i].y < NUMROWS && y + shape->blocks[i].y >= 0);
-		if (inyrange && board[y + shape->blocks[i].y][x + shape->blocks[i].x] != BLACK && board[y + shape->blocks[i].y][x + shape->blocks[i].x] != shape->color) {
-			return BOTTOM;
-		} else if (x + shape->blocks[i].x >= NUMCOLS
-		 || x + shape->blocks[i].x < 0 || !inyrange) {
-			return NOTALLOWED;
-		}
+		bool inrange = y + shape->blocks[i].y <= NUMROWS && y + shape->blocks[i].y >= 0 
+		//it is okay to do y + block.y >= NUMROWS, as this is needed and handled in the bottom case
+			&& x + shape->blocks[i].x < NUMCOLS && x + shape->blocks[i].x >= 0;
+		if (inrange && 
+			(y + shape->blocks[i].y == NUMROWS || board[y + shape->blocks[i].y][x + shape->blocks[i].x] != BLACK )) return BOTTOM;
+		else if (!inrange) return NOTALLOWED;
 	}
 	return ALLOWED;
 }
@@ -144,16 +143,22 @@ void eraseshape(int x, int y, shape_t * shape) {
 
 void move_down(uv_timer_t * handle) {
 	struct status * data = (struct status *) loop->data;
-	if (allowed(data->curx, data->cury+1, &(data->shape)) == ALLOWED) {
-		eraseshape(data->curx, data->cury, &(data->shape));
+	eraseshape(data->curx, data->cury, &(data->shape));
+	enum allowed_t allwd = allowed(data->curx, data->cury+1, &(data->shape));
+	if (allwd == ALLOWED) {
 		data->cury++;
 		drawshape(data->curx, data->cury, &(data->shape));
 		drawboard();
 		refresh();
-	} else {
-		uv_timer_stop(handle);
-		uv_stop(loop);
-	}
+	} else if (allwd == BOTTOM) {
+		drawshape(data->curx, data->cury, &(data->shape));
+		data->curx = 4;
+		data->cury = 1;
+		data->shape = shapes[(data->shape.index + 1)%7];
+		drawshape(4, 1, &(data->shape));
+		drawboard();
+		refresh();
+	} else return;	
 }
 
 void input(uv_idle_t * handle) {
