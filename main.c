@@ -38,6 +38,8 @@ struct status {
 	shape_t shape;
 };
 
+enum allowed_t { ALLOWED, NOTALLOWED, BOTTOM };
+
 static shape_t shapes[7] = {
 	{{{-1, 1}, {-1, 0}, {0, 0}, {1, 0}}, MAGENTA, false, 0},
 	{{{-1, 0}, {0, 0}, {1, 0}, {2, 0}}, RED, false, 1},
@@ -52,7 +54,7 @@ static int board[NUMROWS][NUMCOLS];
 static short level = 1;
 
 void drawboard();
-bool allowed(int, int, shape_t *);
+enum allowed_t allowed(int, int, shape_t *);
 void eraseshape(int, int, shape_t *);
 void drawshape(int, int, shape_t *);
 void move_down(uv_timer_t *);
@@ -121,16 +123,17 @@ void drawboard() {
 	move(0, 0);
 }
 
-bool allowed(int x, int y, shape_t * shape) {
+enum allowed_t allowed(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
-		if (x + shape->blocks[i].x >= NUMCOLS
-		 || y + shape->blocks[i].y >= NUMROWS-1
-		 || x + shape->blocks[i].x < 0
-		 || y + shape->blocks[i].y < 0) {
-		 return false;
+		bool inyrange = (y + shape->blocks[i].y < NUMROWS-1 && y + shape->blocks[i].y >= 0);
+		if (inyrange && board[y + shape->blocks[i].y + 1][x + shape->blocks[i].x] != BLACK && board[y + shape->blocks[i].y + 1][x + shape->blocks[i].x] != shape->color) {
+			return BOTTOM;
+		} else if (x + shape->blocks[i].x >= NUMCOLS
+		 || x + shape->blocks[i].x < 0 || !inyrange) {
+			return NOTALLOWED;
 		}
 	}
-	return true;
+	return ALLOWED;
 }
 
 void eraseshape(int x, int y, shape_t * shape) {
@@ -141,7 +144,7 @@ void eraseshape(int x, int y, shape_t * shape) {
 
 void move_down(uv_timer_t * handle) {
 	struct status * data = (struct status *) loop->data;
-	if (allowed(data->curx, data->cury+1, &(data->shape))) {
+	if (allowed(data->curx, data->cury+1, &(data->shape)) == ALLOWED) {
 		eraseshape(data->curx, data->cury, &(data->shape));
 		data->cury++;
 		drawshape(data->curx, data->cury, &(data->shape));
@@ -162,21 +165,21 @@ void input(uv_idle_t * handle) {
 				eraseshape(data->curx, data->cury, &(data->shape));
 				shape_t tmp = data->shape;
 				rotate(&(data->shape));
-				if (!allowed(data->curx, data->cury, &(data->shape))) data->shape = tmp;
+				if (allowed(data->curx, data->cury, &(data->shape)) == NOTALLOWED) data->shape = tmp;
 				drawshape(data->curx, data->cury, &(data->shape));
 				drawboard();
 				refresh();
 				break;
 			case 'j':
 				eraseshape(data->curx, data->cury, &(data->shape));
-				if (allowed(data->curx - 1, data->cury, &(data->shape))) data->curx--;
+				if (allowed(data->curx - 1, data->cury, &(data->shape)) == ALLOWED) data->curx--;
 				drawshape(data->curx, data->cury, &(data->shape));
 				drawboard();
 				refresh();
 				break;
 			case 'l':
 				eraseshape(data->curx, data->cury, &(data->shape));
-                                if (allowed(data->curx + 1, data->cury, &(data->shape))) data->curx++;
+                                if (allowed(data->curx + 1, data->cury, &(data->shape)) == ALLOWED) data->curx++;
 				drawshape(data->curx, data->cury, &(data->shape));
                                 drawboard();
                                 refresh();
