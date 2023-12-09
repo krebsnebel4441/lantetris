@@ -1,7 +1,7 @@
 #include <ncurses.h>
 #include <uv.h>
 
-#define TIME 1000 / (level + 2)
+#define TIME 5000 / (level + 2)
 
 #define NUMROWS 20
 #define NUMCOLS 10
@@ -113,6 +113,7 @@ int main() {
 }
 
 void drawboard() {
+	move(0, 0);
 	for (int i = 0; i < NUMROWS; i++) {
 		for (int j = 0; j < NUMCOLS; j++) {
 			color_set(board[i][j], 0);
@@ -155,7 +156,11 @@ void move_down(uv_timer_t * handle) {
 		data->curx = 4;
 		data->cury = 1;
 		data->shape = shapes[(data->shape.index + 1)%7];
-		drawshape(4, 1, &(data->shape));
+		if (allowed(4, 1, &(data->shape)) == ALLOWED) {
+			drawshape(4, 1, &(data->shape));
+		} else {
+			uv_stop(loop);
+		}
 		drawboard();
 		refresh();
 	} else return;	
