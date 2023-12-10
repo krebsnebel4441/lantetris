@@ -61,6 +61,7 @@ void move_down(uv_timer_t *);
 void input(uv_idle_t *);
 static void real_rotate(shape_t *, bool);
 static void rotate(shape_t *);
+void clearline(int);
 
 uv_loop_t * loop;
 
@@ -84,7 +85,7 @@ int main() {
 	nodelay(stdscr, TRUE);
 	noecho();
 	move(0, 0);
-	
+
 	for (int i = 0; i < NUMROWS; i++) {
 		for (int j = 0; j < NUMCOLS; j++) {
 			board[i][j] = BLACK;
@@ -153,6 +154,20 @@ void move_down(uv_timer_t * handle) {
 		refresh();
 	} else if (allwd == BOTTOM) {
 		drawshape(data->curx, data->cury, &(data->shape));
+		bool nobrick;
+		for (int i = NUMROWS-1; i >= 0; i--) {
+			nobrick = false;
+			for (int j = 0; j < NUMCOLS; j++) {
+				if (board[i][j] == BLACK) {
+					nobrick = true;
+					break;
+				}
+			}
+			if (!nobrick) {
+				clearline(i);
+				i++;
+			}
+		}
 		data->curx = 4;
 		data->cury = 1;
 		data->shape = shapes[(data->shape.index + 1)%7];
@@ -246,4 +261,16 @@ void drawshape(int x, int y, shape_t * shape) {
 	for (int i = 0; i < 4; i++) {
                 board[y + shape->blocks[i].y][x + shape->blocks[i].x] = shape->color;
         }
+}
+
+void clearline(int line) {
+	while (line > 0) {
+		for (int j = 0; j < NUMCOLS; j++) {
+			board[line][j] = board[line-1][j];
+		}
+		line--;
+	}
+	for (int j = 0; j < NUMCOLS; j++) {
+		board[0][j] = BLACK;
+	}
 }
