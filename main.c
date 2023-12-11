@@ -54,14 +54,14 @@ static int board[NUMROWS][NUMCOLS];
 static short level = 1;
 
 void drawboard();
-enum allowed_t allowed(int, int, shape_t *);
-void eraseshape(int, int, shape_t *);
-void drawshape(int, int, shape_t *);
-void move_down(uv_timer_t *);
-void input(uv_idle_t *);
-static void real_rotate(shape_t *, bool);
-static void rotate(shape_t *);
-void clearline(int);
+enum allowed_t allowed(int x, int y, shape_t * shape);
+void eraseshape(int x, int y, shape_t * shape);
+void drawshape(int x, int y, shape_t * shape);
+void move_down(uv_timer_t * handle);
+void input(uv_idle_t * handle);
+static void real_rotate(shape_t * shape, bool clockwise);
+static void rotate(shape_t * shape);
+void clearline(int line);
 
 uv_loop_t * loop;
 
