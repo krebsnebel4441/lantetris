@@ -1,7 +1,7 @@
 #include <ncurses.h>
 #include <uv.h>
 
-#define TIME 5000 / (level + 2)
+#define TIME 1000 / (level + 2)
 
 #define NUMROWS 20
 #define NUMCOLS 10
