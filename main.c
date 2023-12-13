@@ -84,6 +84,7 @@ int main() {
 	curs_set(0);
 	nodelay(stdscr, TRUE);
 	noecho();
+	keypad(stdscr, TRUE);
 	move(0, 0);
 
 	for (int i = 0; i < NUMROWS; i++) {
@@ -130,7 +131,7 @@ enum allowed_t allowed(int x, int y, shape_t * shape) {
 		bool inrange = y + shape->blocks[i].y <= NUMROWS && y + shape->blocks[i].y >= 0 
 		//it is okay to do y + block.y >= NUMROWS, as this is needed and handled in the bottom case
 			&& x + shape->blocks[i].x < NUMCOLS && x + shape->blocks[i].x >= 0;
-		if (inrange && 
+		if (inrange &&
 			(y + shape->blocks[i].y == NUMROWS || board[y + shape->blocks[i].y][x + shape->blocks[i].x] != BLACK )) return BOTTOM;
 		else if (!inrange) return NOTALLOWED;
 	}
@@ -209,6 +210,11 @@ void input(uv_idle_t * handle) {
                                 drawboard();
                                 refresh();
                                 break;
+			case ' ':
+				int index = data->shape.index;
+				move_down(NULL);
+				while (data->shape.index == index) move_down(NULL);
+				break;
 			case 'q':
 				uv_stop(loop);
 			default: break;
