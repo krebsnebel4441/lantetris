@@ -35,6 +35,7 @@ typedef struct {
 
 struct status {
 	int curx, cury;
+	unsigned int cycleid; 
 	shape_t shape;
 };
 
@@ -66,7 +67,7 @@ void clearline(int line);
 uv_loop_t * loop;
 
 int main() {
-	struct status status = {4, 1, shapes[6]};
+	struct status status = {4, 1, 0, shapes[6]};
 
 	uv_timer_t timer;
 	uv_idle_t idler;
@@ -171,6 +172,7 @@ void move_down(uv_timer_t * handle) {
 		}
 		data->curx = 4;
 		data->cury = 1;
+		data->cycleid++;
 		data->shape = shapes[(data->shape.index + 1)%7];
 		if (allowed(4, 1, &(data->shape)) == ALLOWED) {
 			drawshape(4, 1, &(data->shape));
@@ -211,9 +213,9 @@ void input(uv_idle_t * handle) {
                                 refresh();
                                 break;
 			case ' ':
-				int index = data->shape.index;
+				unsigned int cycid = data->cycleid;
 				move_down(NULL);
-				while (data->shape.index == index) move_down(NULL);
+				while (data->cycleid == cycid) move_down(NULL);
 				break;
 			case 'q':
 				uv_stop(loop);
