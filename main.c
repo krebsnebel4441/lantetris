@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <ncurses.h>
 #include <uv.h>
 
@@ -53,6 +54,7 @@ static shape_t shapes[7] = {
 
 static int board[NUMROWS][NUMCOLS];
 static short level = 1;
+static unsigned int seed = 1;
 
 void drawboard();
 enum allowed_t allowed(int x, int y, shape_t * shape);
@@ -67,7 +69,9 @@ void clearline(int line);
 uv_loop_t * loop;
 
 int main() {
-	struct status status = {4, 1, 0, shapes[6]};
+	seed = time(NULL);
+	srand(seed);
+	struct status status = {4, 1, 0, shapes[rand()%7]};
 
 	uv_timer_t timer;
 	uv_idle_t idler;
@@ -173,7 +177,7 @@ void move_down(uv_timer_t * handle) {
 		data->curx = 4;
 		data->cury = 1;
 		data->cycleid++;
-		data->shape = shapes[(data->shape.index + 1)%7];
+		data->shape = shapes[rand()%7];
 		if (allowed(4, 1, &(data->shape)) == ALLOWED) {
 			drawshape(4, 1, &(data->shape));
 		} else {
