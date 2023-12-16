@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <ncurses.h>
 #include <uv.h>
 
@@ -37,6 +39,7 @@ typedef struct {
 struct status {
 	int curx, cury;
 	unsigned int cycleid; 
+	int points;
 	shape_t shape;
 };
 
@@ -71,7 +74,7 @@ uv_loop_t * loop;
 int main() {
 	seed = time(NULL);
 	srand(seed);
-	struct status status = {4, 1, 0, shapes[rand()%7]};
+	struct status status = {4, 1, 0, 0, shapes[rand()%7]};
 
 	uv_timer_t timer;
 	uv_idle_t idler;
@@ -92,6 +95,10 @@ int main() {
 	keypad(stdscr, TRUE);
 	move(0, 0);
 
+	loop = uv_default_loop();
+	uv_loop_init(loop);
+	loop->data = (void *) &status;
+	
 	for (int i = 0; i < NUMROWS; i++) {
 		for (int j = 0; j < NUMCOLS; j++) {
 			board[i][j] = BLACK;
@@ -100,10 +107,6 @@ int main() {
 	drawshape(status.curx, status.cury, &(status.shape));
 	drawboard();
 	refresh();
-	
-	loop = uv_default_loop();
-	uv_loop_init(loop);
-	loop->data = (void *) &status;
 	
 	uv_timer_init(loop, &timer);
 	uv_timer_start(&timer, move_down, TIME, TIME);
@@ -116,10 +119,14 @@ int main() {
 	uv_loop_close(loop);
 	getch();
 	endwin();
+	printf("Your score: %d\n", status.points);
 	return 0;
 }
 
 void drawboard() {
+	struct status * data = (struct status *) loop->data;
+	color_set(BLACK, 0);
+	mvprintw(0, 21, "%d\n", data->points);
 	move(0, 0);
 	for (int i = 0; i < NUMROWS; i++) {
 		for (int j = 0; j < NUMCOLS; j++) {
@@ -127,7 +134,7 @@ void drawboard() {
 			addstr(". ");
 		}
 		move(i+1, 0);
-	} 
+	}
 	move(0, 0);
 }
 
@@ -161,6 +168,7 @@ void move_down(uv_timer_t * handle) {
 	} else if (allwd == BOTTOM) {
 		drawshape(data->curx, data->cury, &(data->shape));
 		bool nobrick;
+		int clearedlines = 0;
 		for (int i = NUMROWS-1; i >= 0; i--) {
 			nobrick = false;
 			for (int j = 0; j < NUMCOLS; j++) {
@@ -171,9 +179,11 @@ void move_down(uv_timer_t * handle) {
 			}
 			if (!nobrick) {
 				clearline(i);
+				clearedlines++;
 				i++;
 			}
 		}
+		data->points += level*10*(clearedlines >= 1 ? pow(2, clearedlines-1) : 0);
 		data->curx = 4;
 		data->cury = 1;
 		data->cycleid++;
