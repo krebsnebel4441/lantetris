@@ -9,6 +9,7 @@ int main() {
 		message_t message;
 		message.opcode = START;
 		message.seed = 123423;
+		message.level = 5;
 		//encode
 		bytemsg_t msg = encode_message(&message);
 		//decode
@@ -16,6 +17,7 @@ int main() {
 		//test
 		assert(message.opcode == cmp.opcode); 
 		assert(message.seed == cmp.seed);
+		assert(message.level == cmp.level);
 		//cleanup
 		free(msg.buf);
 		

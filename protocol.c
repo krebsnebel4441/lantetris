@@ -21,11 +21,12 @@ bytemsg_t encode_message(message_t * message) {
 			ret.size = buflen; ret.buf = buf;
 			return ret;
 		case START:
-			buf = (char *)malloc(sizeof(char) * 5);
+			buf = (char *)malloc(sizeof(char) * 6);
 			buf[0] = 0x02;
 			bytes32.integer = message->seed;
 			for (int i = 0; i < 4; i++) buf[i+1] = bytes32.bytes[i];
-			ret.size = 5; ret.buf = buf;
+			buf[5] = message->level;
+			ret.size = 6; ret.buf = buf;
 			return ret;
 		case STATUS:
 			size_t len = 1 + 4 + 1 + message->linecount * 11;
@@ -72,10 +73,11 @@ message_t decode_message(char * buf, size_t size) {
 			} else { message.opcode = INVALIDMSG; }
 			return message;
 		case 0x02:
-			if (size >= 5) {
+			if (size >= 6) {
 				message.opcode = START;
 				for (int i = 0; i < 4; i++) conv.bytes[i] = buf[i+1];
 				message.seed = conv.integer;
+				message.level = buf[5];
 			} else { message.opcode = INVALIDMSG; }
 			return message;	
 		case 0x03:

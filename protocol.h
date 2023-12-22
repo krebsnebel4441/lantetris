@@ -19,7 +19,10 @@ typedef struct {
 			uint32_t strlen;
 			char * name;
 		};
-		uint32_t seed;
+		struct {
+			uint32_t seed;
+			uint8_t level;
+		};
 		struct {
 			uint32_t score;
 			uint8_t linecount;
