@@ -64,7 +64,7 @@ enum allowed_t allowed(int x, int y, shape_t * shape);
 void eraseshape(int x, int y, shape_t * shape);
 void drawshape(int x, int y, shape_t * shape);
 void move_down(uv_timer_t * handle);
-void input(uv_idle_t * handle);
+void input(uv_timer_t * handle);
 static void real_rotate(shape_t * shape, bool clockwise);
 static void rotate(shape_t * shape);
 void clearline(int line);
@@ -76,8 +76,7 @@ int main() {
 	srand(seed);
 	struct status status = {4, 1, 0, 0, shapes[rand()%7]};
 
-	uv_timer_t timer;
-	uv_idle_t idler;
+	uv_timer_t mv_down_timer, input_timer;
 	
 	initscr();
 	start_color();
@@ -108,11 +107,11 @@ int main() {
 	drawboard();
 	refresh();
 	
-	uv_timer_init(loop, &timer);
-	uv_timer_start(&timer, move_down, TIME, TIME);
+	uv_timer_init(loop, &mv_down_timer);
+	uv_timer_start(&mv_down_timer, move_down, TIME, TIME);
 	
-	uv_idle_init(loop, &idler);
-	uv_idle_start(&idler, input);
+	uv_timer_init(loop, &input_timer);
+	uv_timer_start(&input_timer, input, 5, 5);
 
 	uv_run(loop, UV_RUN_DEFAULT);
 	
@@ -198,7 +197,7 @@ void move_down(uv_timer_t * handle) {
 	} else return;	
 }
 
-void input(uv_idle_t * handle) {
+void input(uv_timer_t * handle) {
 	struct status * data = (struct status *)loop->data;
 	int c = getch();
 	if (c != ERR) {
