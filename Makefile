@@ -2,7 +2,7 @@ CLIENT=ltetris-clt
 CC=cc
 LINK= -lncurses -luv
 
-all: client
+all: client testclt
 
 client:	main.c
 	$(CC) -o $(CLIENT) main.c $(LINK)
@@ -16,8 +16,11 @@ protocoltest: test_protocol.c protocol.o
 test: protocoltest
 	./prototest
 
+testclt: lantetris.c protocol.o
+	$(CC) -o testclt lantetris.c protocol.o $(LINK)
 clean:
 	rm -rf $(CLIENT)
 	rm -rf protocol.o
 	rm -rf prototest
+	rm -rf testclt
 
