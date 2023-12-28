@@ -38,9 +38,10 @@ void echo_write(uv_write_t *req, int status) {
 
 void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
     if (nread > 0) {
-        printf("%s", buf->base);
 	write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-        req->buf = uv_buf_init(buf->base, nread);
+        char * base = malloc(6);
+	base[0] = 0x02; base[1] = 0x31; base[2] = 0x43; base[3] = 0x12; base[4] = 0x13; base[5] = 0x5; 
+	req->buf = uv_buf_init(base, 6);
         uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
         return;
     }
