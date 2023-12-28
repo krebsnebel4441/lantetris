@@ -51,7 +51,6 @@ static shape_t shapes[7] = {
 
 static int board[NUMROWS][NUMCOLS];
 static short level = 1;
-static FILE * debug;
 static bool gamestarted = false;
 
 uv_loop_t * loop;
@@ -79,7 +78,6 @@ size_t namesz;
 struct status_t status;
 
 int main(int argc, char * argv[]) {
-	debug = fopen("debug.txt", "w");
 	loop = uv_default_loop();
 	uv_timer_init(loop, &mv_down_timer);
 	uv_timer_init(loop, &input_timer);
@@ -137,7 +135,6 @@ void parsestart(uv_stream_t * server, ssize_t nread, const uv_buf_t * buf) {
 			status.curx = 4; status.cury = 1;
 			status.cycleid = 0; status.points = 0;
 			status.shape = shapes[rand()%7];
-			fprintf(debug, "points on start %d\n", status.points);
 			loop->data = (void *)&status;
 			initscr();
 			start_color();
@@ -164,7 +161,6 @@ void parsestart(uv_stream_t * server, ssize_t nread, const uv_buf_t * buf) {
 			refresh();
 			uv_timer_start(&mv_down_timer, move_down, TIME, TIME);
 			uv_timer_start(&input_timer, input, 5, 5);
-			fprintf(debug, "points on end of start %d\n", status.points);
 			}
 	}
 	else return;
@@ -173,7 +169,6 @@ void parsestart(uv_stream_t * server, ssize_t nread, const uv_buf_t * buf) {
 void drawboard() {
 	struct status_t * data = (struct status_t *) loop->data;
 	color_set(BLACK, 0);
-	fprintf(debug, "points on drawboard %d\n", data->points);
 	mvprintw(0, 21, "%d\n", data->points);
 	move(0, 0);
 	for (int i = 0; i < NUMROWS; i++) {
@@ -217,7 +212,6 @@ void move_down(uv_timer_t * handle) {
 		drawshape(data->curx, data->cury, &(data->shape));
 		bool nobrick;
 		int clearedlines = 0;
-		fprintf(debug, "checking lines\nclearedlines is %d\n", clearedlines);
 		for (int i = NUMROWS-1; i >= 0; i--) {
 			nobrick = false;
 			for (int j = 0; j < NUMCOLS; j++) {
@@ -229,11 +223,9 @@ void move_down(uv_timer_t * handle) {
 			if (!nobrick) {
 				clearline(i);
 				clearedlines++;
-				fprintf(debug, "clearing line %d, clearedline is %d\n", i, clearedlines);
 				i++;
 			}
 		}
-		fprintf(debug, "points before increase %d and the increase is %d, the level is %d, clearedlines: %d\n", data->points, (unsigned int)(level*10*(clearedlines >= 1 ? pow(2, clearedlines-1) : 0)), level, clearedlines);
 		data->points += level*10*(clearedlines >= 1 ? pow(2, clearedlines-1) : 0);
 		data->curx = 4;
 		data->cury = 1;
@@ -283,7 +275,6 @@ void input(uv_timer_t * handle) {
 				while (data->cycleid == cycid) move_down(NULL);
 				break;
 			case 'q':
-				fclose(debug);
 				endwin();
 				uv_stop(loop);
 			default: break;
