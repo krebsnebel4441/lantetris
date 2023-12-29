@@ -43,8 +43,11 @@ void onnewconn(uv_stream_t * server, int status);
 void alloc_buffer(uv_handle_t * handle, size_t suggested_size, uv_buf_t * buf);
 void parse(uv_stream_t * client, ssize_t nread, const uv_buf_t * buf);
 void onstartwrite(uv_write_t *req, int status);
+void startgame(uv_timer_t * handle);
+void onstartsent(uv_write_t * req, int status);
 
 uv_loop_t * loop;
+uv_timer_t start;
 
 int main() {
 	clients_t clients = initclients();
@@ -59,6 +62,9 @@ int main() {
 	loop = uv_default_loop();
 
 	loop->data = (void *)&clients;
+	
+	uv_timer_init(loop, &start);
+	uv_timer_start(&start, startgame, 10000, 0);
 
     	uv_tcp_t server;
     	uv_tcp_init(loop, &server);
@@ -109,6 +115,22 @@ void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
 void onstartwrite(uv_write_t *req, int status) {
 	if (status < 0) {
 		fprintf(stderr, "Failed to write start message");
+	}
+	free(req);
+}
+
+void startgame(uv_timer_t * handle) {
+	clients_t * data = (clients_t *)loop->data;
+	for (int i = 0; i < data->size; i++) {
+		uv_write_t * write = malloc(sizeof(uv_write_t));
+		uv_buf_t buf = uv_buf_init(startmsg, 6);
+		uv_write(write, (uv_stream_t *)data->connections[i], &buf, 1, onstartsent);
+	}
+}
+
+void onstartsent(uv_write_t * req, int status) {
+	if (status < 0) {
+		fprintf(stderr, "failed to sent start");
 	}
 	free(req);
 }
