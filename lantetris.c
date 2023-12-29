@@ -66,6 +66,9 @@ void allocbuf(uv_handle_t * handle, size_t suggestsize, uv_buf_t * buf) {
 }
 void onstatussent(uv_write_t * req, int status);
 void sendstatus();
+void sendgameover();
+void ongameoversent(uv_write_t * req, int status);
+void onshutdown(uv_shutdown_t * req, int status);
 
 void drawboard();
 enum allowed_t allowed(int x, int y, shape_t * shape);
@@ -162,9 +165,10 @@ void parsestart(uv_stream_t * server, ssize_t nread, const uv_buf_t * buf) {
 			drawshape(status.curx, status.cury, &(status.shape));
 			drawboard();
 			refresh();
+			sendstatus();
 			uv_timer_start(&mv_down_timer, move_down, TIME, TIME);
 			uv_timer_start(&input_timer, input, 5, 5);
-			}
+		}
 	}
 	else return;
 }
@@ -242,7 +246,7 @@ void move_down(uv_timer_t * handle) {
 		if (allowed(4, 1, &(data->shape)) == ALLOWED) {
 			drawshape(4, 1, &(data->shape));
 		} else {
-			uv_stop(loop);
+			sendgameover();
 		}
 		drawboard();
 		refresh();
@@ -283,8 +287,8 @@ void input(uv_timer_t * handle) {
 				while (data->cycleid == cycid) move_down(NULL);
 				break;
 			case 'q':
+				sendgameover();
 				endwin();
-				uv_stop(loop);
 			default: break;
 		}
 	}
@@ -372,4 +376,29 @@ void onstatussent(uv_write_t * req, int status) {
 	if (status < 0) {
 		fprintf(stderr, "failed to sent status");
 	}
+}
+
+void sendgameover() {
+	message_t msg;
+	msg.opcode = GAMEOVER;
+	bytemsg_t buf = encode_message(&msg);
+	uv_write_t * write = malloc(sizeof(uv_write_t));
+	uv_buf_t sentbuf = uv_buf_init(buf.buf, buf.size);
+	uv_write(write, (uv_stream_t *)&conn, &sentbuf, 1, ongameoversent);
+}
+
+void ongameoversent(uv_write_t * req, int status) {
+	if (status < 0) {
+		fprintf(stderr, "failed to sent game over");
+	}
+	uv_read_stop((uv_stream_t *)&conn);
+	uv_shutdown_t * shutdown = malloc(sizeof(uv_shutdown_t));
+	uv_shutdown(shutdown, (uv_stream_t *)&conn, onshutdown);
+}
+
+void onshutdown(uv_shutdown_t * req, int status) {
+	if (status < 0) {
+		fprintf(stderr, "failed to shutdown");
+	}
+	uv_stop(loop);
 }
