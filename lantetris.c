@@ -49,12 +49,13 @@ static shape_t shapes[7] = {
 	{{{-1, 0}, {0, 0}, {1, 0}, {0, 1}}, YELLOW, false, 6},
 };
 
-static int board[NUMROWS][NUMCOLS];
+static uint8_t board[NUMROWS][NUMCOLS];
 static short level = 1;
 static bool gamestarted = false;
 
 uv_loop_t * loop;
 uv_timer_t mv_down_timer, input_timer;
+uv_tcp_t conn;
 
 void onconn(uv_connect_t * req, int status);
 void onregis(uv_write_t * req, int status);  
@@ -63,6 +64,9 @@ void allocbuf(uv_handle_t * handle, size_t suggestsize, uv_buf_t * buf) {
 	buf->base = (char *)malloc(suggestsize);
 	buf->len = suggestsize;
 }
+void onstatussent(uv_write_t * req, int status);
+void sendstatus();
+
 void drawboard();
 enum allowed_t allowed(int x, int y, shape_t * shape);
 void eraseshape(int x, int y, shape_t * shape);
@@ -94,10 +98,9 @@ int main(int argc, char * argv[]) {
 		fprintf(stderr, "bad address\n");
 		return -1;
 	}
-	uv_tcp_t socket;
-	uv_tcp_init(loop, &socket);
+	uv_tcp_init(loop, &conn);
 	uv_connect_t * connect = (uv_connect_t *)malloc(sizeof(uv_connect_t));
-	uv_tcp_connect(connect, &socket, (const struct sockaddr *)&server, onconn);
+	uv_tcp_connect(connect, &conn, (const struct sockaddr *)&server, onconn);
 	return uv_run(loop, UV_RUN_DEFAULT);
 }
 
@@ -210,8 +213,9 @@ void move_down(uv_timer_t * handle) {
 		refresh();
 	} else if (allwd == BOTTOM) {
 		drawshape(data->curx, data->cury, &(data->shape));
-		bool nobrick;
+		bool nobrick, cleared;
 		int clearedlines = 0;
+		cleared = false;
 		for (int i = NUMROWS-1; i >= 0; i--) {
 			nobrick = false;
 			for (int j = 0; j < NUMCOLS; j++) {
@@ -221,12 +225,16 @@ void move_down(uv_timer_t * handle) {
 				}
 			}
 			if (!nobrick) {
+				cleared = true;
 				clearline(i);
 				clearedlines++;
 				i++;
 			}
 		}
 		data->points += level*10*(clearedlines >= 1 ? pow(2, clearedlines-1) : 0);
+		if(cleared) {
+			sendstatus();
+		}
 		data->curx = 4;
 		data->cury = 1;
 		data->cycleid++;
@@ -338,5 +346,30 @@ void clearline(int line) {
 	}
 	for (int j = 0; j < NUMCOLS; j++) {
 		board[0][j] = BLACK;
+	}
+}
+
+void sendstatus() {
+	struct status_t * data = (struct status_t *)loop->data;
+	message_t msg;
+	msg.opcode = STATUS;
+	msg.score = data->points;
+	msg.linecount = 20;
+	msg.lines = malloc(sizeof(struct statusline) * 20);
+	for (int i = 0; i < 20; i++) {
+		msg.lines[i].index = (uint8_t) i;
+		for (int j = 0; j < 10; j++) {
+			msg.lines[i].fields[j] = board[i][j];
+		}
+	}
+	bytemsg_t buf = encode_message(&msg);
+	uv_write_t * write = malloc(sizeof(uv_write_t));
+	uv_buf_t sentbuf = uv_buf_init(buf.buf, buf.size);
+	uv_write(write, (uv_stream_t *)&conn, &sentbuf, 1, onstatussent);
+}
+
+void onstatussent(uv_write_t * req, int status) {
+	if (status < 0) {
+		fprintf(stderr, "failed to sent status");
 	}
 }

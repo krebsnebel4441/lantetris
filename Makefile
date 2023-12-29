@@ -2,10 +2,7 @@ CLIENT=ltetris-clt
 CC=cc
 LINK= -lncurses -luv
 
-all: client testclt
-
-client:	main.c
-	$(CC) -o $(CLIENT) main.c $(LINK)
+all: testclt
 
 protocol.o: protocol.c
 	$(CC) -c protocol.c
