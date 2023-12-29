@@ -247,6 +247,7 @@ void move_down(uv_timer_t * handle) {
 			drawshape(4, 1, &(data->shape));
 		} else {
 			sendgameover();
+			return;
 		}
 		drawboard();
 		refresh();
@@ -288,7 +289,6 @@ void input(uv_timer_t * handle) {
 				break;
 			case 'q':
 				sendgameover();
-				endwin();
 			default: break;
 		}
 	}
@@ -379,6 +379,9 @@ void onstatussent(uv_write_t * req, int status) {
 }
 
 void sendgameover() {
+	uv_timer_stop(&mv_down_timer);
+	uv_timer_stop(&input_timer);
+	endwin();
 	message_t msg;
 	msg.opcode = GAMEOVER;
 	bytemsg_t buf = encode_message(&msg);
