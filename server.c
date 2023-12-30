@@ -38,6 +38,7 @@ void insertclient(clients_t * arr, struct client * newclt, uv_tcp_t * conn) {
 
 static enum { REGISTRATION, GAME } gamestate = REGISTRATION;
 static char * startmsg;
+static int runningclients = 0;
 
 void onnewconn(uv_stream_t * server, int status);
 void alloc_buffer(uv_handle_t * handle, size_t suggested_size, uv_buf_t * buf);
@@ -77,7 +78,19 @@ int main() {
         	fprintf(stderr, "Listen error %s\n", uv_strerror(r));
         	return 1;
     	}
-    	return uv_run(loop, UV_RUN_DEFAULT);
+    	uv_run(loop, UV_RUN_DEFAULT);
+	struct client * biggest = NULL;
+	int greatestscore = 0;
+	for (int i = 0; i < clients.size; i++) {
+		struct client * show = (struct client *)clients.connections[i]->data;
+		printf("%d, %s reached %d points\n", i+1, show->name, show->score);
+		if (show->score > greatestscore) {
+			greatestscore = show->score;
+			biggest = show;
+		}
+	}
+	if (biggest != NULL) printf("%s, won\n", biggest->name);
+	return 0;
 }
 
 void onnewconn(uv_stream_t * server, int status) {
@@ -102,8 +115,16 @@ void parse(uv_stream_t * client, ssize_t nread, const uv_buf_t * buf) {
 			newclient->name = msg.name;
 			newclient->score = 0;
 			insertclient(clients, newclient, (uv_tcp_t *)client);
+			runningclients++;
+		} else if (msg.opcode == GAMEOVER) {
+			runningclients--;
+			if (runningclients <= 0) {
+				uv_stop(loop);
+			}
+		} else if (msg.opcode == STATUS) {
+			struct client * change = (struct client *)client->data;
+			change->score += msg.score;
 		}
-		struct client * show = (struct client *)clients->connections[0]->data;
 	}
 }
 
