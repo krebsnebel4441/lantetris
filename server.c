@@ -52,17 +52,17 @@ uv_timer_t start;
 
 int main(int argc, char * argv[]) {
 	int port, timeout, level;
-	if (argc < 2) {
+	if (argc < 3) {
 		fprintf(stderr, "too few arguments\n");
 		fprintf(stderr, "usage:\nport level [timeout]\n");
 		return -1;
-	} else if (argc == 2) {
+	} else if (argc == 3) {
 		timeout = 10;
 		port = atoi(argv[1]);
 		if (port == 0) return -1;
 		level = atoi(argv[2]);
 		if (level == 0) return -1;
-	} else if (argc >= 3) {	
+	} else if (argc >= 4) {	
 		port = atoi(argv[1]);
 		if (port == 0) return -1;
 		level = atoi(argv[2]);
@@ -70,7 +70,6 @@ int main(int argc, char * argv[]) {
 		timeout = atoi(argv[3]);
 		if (timeout == 0) return -1;
 	}
-	printf("%d %d\n", timeout, port);
 	clients_t clients = initclients();
 	struct sockaddr_in addr;
 	message_t msg;

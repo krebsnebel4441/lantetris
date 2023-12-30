@@ -85,19 +85,23 @@ size_t namesz;
 struct status_t status;
 
 int main(int argc, char * argv[]) {
+	printf("%d\n", argc);
 	loop = uv_default_loop();
 	uv_timer_init(loop, &mv_down_timer);
 	uv_timer_init(loop, &input_timer);
 
 	struct sockaddr_in server;
-	if (argc < 3) {
+	if (argc < 4) {
 		fprintf(stderr, "invaled arguments\n");
+		fprintf(stderr, "usuage port address name\n");
 		return -1;
 	}
-	name = malloc(strlen(argv[2]));
-	memcpy(name, argv[2], strlen(argv[2]));
-	namesz = strlen(argv[2]);
-	if (uv_ip4_addr(argv[1], 7003, &server) != 0) {
+	name = malloc(strlen(argv[3]));
+	memcpy(name, argv[3], strlen(argv[3]));
+	namesz = strlen(argv[3]);
+	int port = atoi(argv[1]);
+	if (port == 0) return -1;
+	if (uv_ip4_addr(argv[2], port, &server) != 0) {
 		fprintf(stderr, "bad address\n");
 		return -1;
 	}
