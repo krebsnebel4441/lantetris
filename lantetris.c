@@ -83,15 +83,41 @@ void clearline(int line);
 char * name;
 size_t namesz;
 struct status_t status;
+static int xbase, ybase;
 
 int main(int argc, char * argv[]) {
-	printf("%d\n", argc);
 	loop = uv_default_loop();
 	uv_timer_init(loop, &mv_down_timer);
 	uv_timer_init(loop, &input_timer);
+	
+	initscr();
+	start_color();
+	init_pair(RED, COLOR_BLACK, RED);
+	init_pair(GREEN, COLOR_BLACK, GREEN);
+	init_pair(YELLOW, COLOR_BLACK, YELLOW);
+	init_pair(BLUE, COLOR_BLACK, BLUE);
+	init_pair(MAGENTA, COLOR_BLACK, MAGENTA);
+	init_pair(CYAN, COLOR_BLACK, CYAN);
+	init_pair(WHITE, COLOR_BLACK, WHITE);
+	init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
+	init_pair(9, COLOR_BLUE, COLOR_BLACK);
+	curs_set(0);
+	nodelay(stdscr, TRUE);
+	noecho();
+	keypad(stdscr, TRUE);
+	int maxx, maxy;
+	getmaxyx(stdscr, maxy, maxx);
+	if (maxx < 10+2 || maxy < 20 + 1) {
+		endwin();
+		fprintf(stderr, "Terminal too small\n");
+		return -1;
+	}
+	xbase = (maxx - 20) / 2;
+	ybase = (maxy - 20) / 2;
 
 	struct sockaddr_in server;
 	if (argc < 4) {
+		endwin();
 		fprintf(stderr, "invaled arguments\n");
 		fprintf(stderr, "usuage port address name\n");
 		return -1;
@@ -102,6 +128,7 @@ int main(int argc, char * argv[]) {
 	int port = atoi(argv[1]);
 	if (port == 0) return -1;
 	if (uv_ip4_addr(argv[2], port, &server) != 0) {
+		endwin();
 		fprintf(stderr, "bad address\n");
 		return -1;
 	}
@@ -113,6 +140,7 @@ int main(int argc, char * argv[]) {
 
 void onconn(uv_connect_t * req, int status) {
 	if (status < 0) {
+		endwin();
 		fprintf(stderr, "Failed to connect to server, maybe check the address\n");
 		exit(-1);
 	}
@@ -129,6 +157,7 @@ void onconn(uv_connect_t * req, int status) {
 
 void onregis(uv_write_t * req, int status) {
 	if (status < 0) {
+		endwin();
 		fprintf(stderr, "Failed to register\n");
 	}
 	uv_read_start((uv_stream_t *) req->handle, allocbuf, parsestart);
@@ -139,28 +168,13 @@ void parsestart(uv_stream_t * server, ssize_t nread, const uv_buf_t * buf) {
 		message_t msg = decode_message(buf->base, buf->len);
 		if (msg.opcode == START && !gamestarted) {
 			gamestarted = true;
-			fprintf(stderr, "start %d %d", msg.seed, msg.level);
 			srand(msg.seed);
 			level = msg.level;
 			status.curx = 4; status.cury = 1;
 			status.cycleid = 0; status.points = 0;
 			status.shape = shapes[rand()%7];
 			loop->data = (void *)&status;
-			initscr();
-			start_color();
-			init_pair(RED, COLOR_BLACK, RED);
-			init_pair(GREEN, COLOR_BLACK, GREEN);
-			init_pair(YELLOW, COLOR_BLACK, YELLOW);
-			init_pair(BLUE, COLOR_BLACK, BLUE);
-			init_pair(MAGENTA, COLOR_BLACK, MAGENTA);
-			init_pair(CYAN, COLOR_BLACK, CYAN);
-			init_pair(WHITE, COLOR_BLACK, WHITE);
-			init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
-			curs_set(0);
-			nodelay(stdscr, TRUE);
-			noecho();
-			keypad(stdscr, TRUE);
-			move(0, 0);
+			move(ybase, xbase);
 			for (int i = 0; i < NUMROWS; i++) {
                 		for (int j = 0; j < NUMCOLS; j++) {
                         		board[i][j] = BLACK;
@@ -168,6 +182,15 @@ void parsestart(uv_stream_t * server, ssize_t nread, const uv_buf_t * buf) {
         		}
 			drawshape(status.curx, status.cury, &(status.shape));
 			drawboard();
+			color_set(9, 0);
+			for (int i = 0; i < 20; i++) {
+				move(i + ybase, xbase - 1);
+				addch('<');
+				move(i + ybase, xbase + 20);
+				addch('>');
+			}
+			move(ybase + 20, xbase - 1);
+			addstr("======================");
 			refresh();
 			sendstatus();
 			uv_timer_start(&mv_down_timer, move_down, TIME, TIME);
@@ -180,16 +203,16 @@ void parsestart(uv_stream_t * server, ssize_t nread, const uv_buf_t * buf) {
 void drawboard() {
 	struct status_t * data = (struct status_t *) loop->data;
 	color_set(BLACK, 0);
-	mvprintw(0, 21, "%d\n", data->points);
-	move(0, 0);
+	mvprintw(ybase, xbase + 22, "%d\n", data->points);
+	move(ybase, xbase);
 	for (int i = 0; i < NUMROWS; i++) {
 		for (int j = 0; j < NUMCOLS; j++) {
 			color_set(board[i][j], 0);
 			addstr(". ");
 		}
-		move(i+1, 0);
+		move(ybase + i + 1, xbase);
 	}
-	move(0, 0);
+	move(ybase, xbase);
 }
 
 enum allowed_t allowed(int x, int y, shape_t * shape) {
@@ -198,7 +221,8 @@ enum allowed_t allowed(int x, int y, shape_t * shape) {
 		//it is okay to do y + block.y >= NUMROWS, as this is needed and handled in the bottom case
 			&& x + shape->blocks[i].x < NUMCOLS && x + shape->blocks[i].x >= 0;
 		if (inrange &&
-			(y + shape->blocks[i].y == NUMROWS || board[y + shape->blocks[i].y][x + shape->blocks[i].x] != BLACK )) return BOTTOM;
+			(y + shape->blocks[i].y == NUMROWS || 
+			board[y + shape->blocks[i].y][x + shape->blocks[i].x] != BLACK )) return BOTTOM;
 		else if (!inrange) return NOTALLOWED;
 	}
 	return ALLOWED;
