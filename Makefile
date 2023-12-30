@@ -1,6 +1,6 @@
 CLIENT=ltetris-clt
 CC=cc
-LINK= -lncurses -luv
+LINK= -lm -lncurses -luv
 
 all: client server
 

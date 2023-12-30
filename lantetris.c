@@ -97,7 +97,7 @@ int main(int argc, char * argv[]) {
 	name = malloc(strlen(argv[2]));
 	memcpy(name, argv[2], strlen(argv[2]));
 	namesz = strlen(argv[2]);
-	if (uv_ip4_addr(argv[1], 7000, &server) != 0) {
+	if (uv_ip4_addr(argv[1], 7003, &server) != 0) {
 		fprintf(stderr, "bad address\n");
 		return -1;
 	}

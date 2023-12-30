@@ -65,12 +65,12 @@ int main() {
 	loop->data = (void *)&clients;
 	
 	uv_timer_init(loop, &start);
-	uv_timer_start(&start, startgame, 10000, 0);
+	uv_timer_start(&start, startgame, 5000, 0);
 
     	uv_tcp_t server;
     	uv_tcp_init(loop, &server);
 
-    	uv_ip4_addr("0.0.0.0", 7000, &addr);
+    	uv_ip4_addr("0.0.0.0", 7003, &addr);
 
     	uv_tcp_bind(&server, (const struct sockaddr*)&addr, 0);
     	int r = uv_listen((uv_stream_t*) &server, DEFAULT_BACKLOG, onnewconn);
@@ -116,6 +116,7 @@ void parse(uv_stream_t * client, ssize_t nread, const uv_buf_t * buf) {
 			newclient->score = 0;
 			insertclient(clients, newclient, (uv_tcp_t *)client);
 			runningclients++;
+			printf("client with name %s registered\n", msg.name);
 		} else if (msg.opcode == GAMEOVER) {
 			runningclients--;
 			if (runningclients <= 0) {
