@@ -291,7 +291,7 @@ void input(uv_timer_t * handle) {
 				eraseshape(data->curx, data->cury, &(data->shape));
 				shape_t tmp = data->shape;
 				rotate(&(data->shape));
-				if (allowed(data->curx, data->cury, &(data->shape)) == NOTALLOWED) data->shape = tmp;
+				if (allowed(data->curx, data->cury, &(data->shape)) != ALLOWED) data->shape = tmp;
 				drawshape(data->curx, data->cury, &(data->shape));
 				drawboard();
 				refresh();
